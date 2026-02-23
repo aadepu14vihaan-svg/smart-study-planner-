@@ -1,0 +1,50 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #eef5ff;
+  padding: 15px;
+}
+
+.container {
+  max-width: 400px;
+  margin: auto;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #1a1a1a;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  background: darkblue;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.google-btn {
+  background: #db4437;
+}
+
+#result {
+  margin-top: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+.login, .planner {
+  display: none;
+  margin-top: 20px;
+}
