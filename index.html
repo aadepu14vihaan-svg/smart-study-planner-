@@ -1,1 +1,299 @@
-# smart-study-planner-
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ultra Smart Study Planner - Sign Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: linear-gradient(135deg,#a1c4fd,#c2e9fb);
+      --text-color: #333;
+      --button-bg: #4b6cb7;
+      --button-hover: #182848;
+      --card-bg: #fff;
+    }
+    [data-theme="dark"] {
+      --bg-color: #1e1e1e;
+      --text-color: #f0f0f0;
+      --button-bg: #4b6cb7;
+      --button-hover: #182848;
+      --card-bg: #2a2a2a;
+    }
+    body { font-family:'Roboto', sans-serif; margin:0; padding:0; background: var(--bg-color); color: var(--text-color); transition:0.3s; }
+    .container { max-width:480px; margin:auto; padding:20px; transition:0.3s; }
+    h1,h2 { text-align:center; color: var(--text-color); }
+    input, button { width:100%; padding:14px; margin-top:10px; border-radius:10px; border:none; font-size:16px; box-sizing:border-box; }
+    button { background: var(--button-bg); color:white; font-weight:bold; cursor:pointer; transition:0.3s; }
+    button:hover{ background: var(--button-hover); }
+    #schedule { margin-top:20px; background: var(--card-bg); padding:15px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.2); transition:0.3s; }
+    .item { padding:10px; border-radius:8px; margin:6px 0; cursor:grab; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    .highlight { background:#ffeaa7 !important; }
+    .subject-Math { background:#d6eaff; }
+    .subject-Physics { background:#ffd6d6; }
+    .subject-Chemistry { background:#d6ffd6; }
+    .subject-Break { background:#f0f8ff; font-style:italic; }
+    .subject-Play { background:#fff2cc; }
+    .subject-Free { background:#f0f0f0; }
+    .hidden { display:none; }
+    .top-bar { text-align:center; margin-bottom:20px; }
+    .export-btn { background:#f57c00; margin-top:10px; }
+    .theme-btn { background:#555; margin-top:10px; }
+    /* Timeline calendar view */
+    #calendar { display:flex; flex-direction:column; gap:6px; margin-top:20px; }
+    .block { border-radius:10px; color:#000; padding:8px; font-weight:bold; display:flex; justify-content:space-between; transition:0.3s; }
+    .block-Study { background:#a0c4ff; color:#000; }
+    .block-Break { background:#ffccd5; color:#000; font-style:italic; }
+    .block-Play { background:#fdffb6; color:#000; }
+    .block-Free { background:#caffbf; color:#000; }
+    [data-theme="dark"] .block-Study { background:#2a5d9f; color:#fff; }
+    [data-theme="dark"] .block-Break { background:#99424c; color:#fff; }
+    [data-theme="dark"] .block-Play { background:#a69d00; color:#fff; }
+    [data-theme="dark"] .block-Free { background:#468c47; color:#fff; }
+    /* Pulsing highlight for current task */
+    @keyframes pulse { 0% { box-shadow:0 0 5px rgba(255,255,0,0.5); } 50% { box-shadow:0 0 15px rgba(255,255,0,0.9); } 100% { box-shadow:0 0 5px rgba(255,255,0,0.5); } }
+    .current { animation:pulse 1s infinite; border:2px solid #ffd700; }
+    .google-btn { background:#db4437; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Home -->
+  <div id="home">
+    <h1>🤖 Ultra Smart Study Planner</h1>
+    <p style="text-align:center;">Plan your day intelligently & get reminders!</p>
+    <button onclick="showLogin()">Login / Sign Up</button>
+    <button class="theme-btn" onclick="toggleTheme()">Toggle Night Mode</button>
+  </div>
+
+  <!-- Login/Signup -->
+  <div id="login" class="hidden">
+    <h2>Login / Sign Up</h2>
+    <input type="text" id="username" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login / Register</button>
+    <button class="google-btn" onclick="googleLogin()">Sign Up with Google</button>
+    <button onclick="showHome()" style="background:#888;">Back</button>
+    <p style="font-size:12px;text-align:center;margin-top:8px;">First time? Just type email & password and press login!</p>
+    <button class="theme-btn" onclick="toggleTheme()">Toggle Night Mode</button>
+  </div>
+
+  <!-- Planner -->
+  <div id="planner" class="hidden">
+    <div class="top-bar">
+      <h2>Welcome <span id="userLabel"></span>!</h2>
+      <button class="theme-btn" onclick="toggleTheme()">Toggle Night Mode</button>
+    </div>
+    <input type="number" id="wake" placeholder="Wake Time (6)">
+    <input type="number" id="sleep" placeholder="Sleep Time (22)">
+    <input type="number" id="study" placeholder="Total Study Hours">
+    <input type="text" id="subjects" placeholder="Subjects (Math, Physics, Chemistry)">
+    <input type="number" id="play" placeholder="Total Play Hours">
+
+    <button onclick="generateSchedule()">Generate Schedule</button>
+    <button class="export-btn" onclick="exportPDF()">Export as PDF</button>
+    <button onclick="clearSchedule()" style="background:#888; margin-top:6px;">Clear Saved Schedule</button>
+
+    <div id="schedule"></div>
+    <div id="calendar"></div>
+    <button onclick="logout()" style="background:#555; margin-top:12px;">Logout</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+let dragged;
+let currentSchedule = [];
+let currentUser = "";
+
+// Theme toggle
+function toggleTheme(){
+  if(document.documentElement.getAttribute("data-theme")==="dark"){ document.documentElement.removeAttribute("data-theme"); }
+  else { document.documentElement.setAttribute("data-theme","dark"); }
+}
+
+// Sections
+function showHome(){ document.getElementById("home").classList.remove("hidden"); document.getElementById("login").classList.add("hidden"); document.getElementById("planner").classList.add("hidden"); }
+function showLogin(){ document.getElementById("home").classList.add("hidden"); document.getElementById("login").classList.remove("hidden"); }
+function showPlanner(){ document.getElementById("home").classList.add("hidden"); document.getElementById("login").classList.add("hidden"); document.getElementById("planner").classList.remove("hidden"); }
+
+// Login / Signup
+function login(){
+  let email = document.getElementById("username").value.trim();
+  let pass = document.getElementById("password").value.trim();
+  if(!email||!pass){ alert("Enter email & password"); return; }
+  // Save user in localStorage
+  let users = JSON.parse(localStorage.getItem("users")||"{}");
+  if(!users[email]) users[email] = {password:pass, schedule:[]};
+  localStorage.setItem("users",JSON.stringify(users));
+  currentUser=email;
+  document.getElementById("userLabel").innerText=email.split("@")[0];
+  // Load saved schedule
+  currentSchedule = users[email].schedule || [];
+  displaySchedule(currentSchedule);
+  startReminderChecker();
+  showPlanner();
+}
+
+// Fake Google login (simulate)
+function googleLogin(){
+  const email = prompt("Enter Google email");
+  if(!email){ alert("Email required"); return; }
+  let users = JSON.parse(localStorage.getItem("users")||"{}");
+  if(!users[email]) users[email] = {password:"google", schedule:[]};
+  localStorage.setItem("users",JSON.stringify(users));
+  currentUser=email;
+  document.getElementById("userLabel").innerText=email.split("@")[0];
+  currentSchedule = users[email].schedule || [];
+  displaySchedule(currentSchedule);
+  startReminderChecker();
+  showPlanner();
+}
+
+function logout(){
+  if(currentUser){
+    // save schedule
+    let users = JSON.parse(localStorage.getItem("users")||"{}");
+    users[currentUser].schedule = currentSchedule;
+    localStorage.setItem("users",JSON.stringify(users));
+  }
+  currentUser=""; currentSchedule=[]; showHome();
+}
+
+function clearSchedule(){ if(!currentUser) return; localStorage.getItem("users"); let users=JSON.parse(localStorage.getItem("users")||"{}"); users[currentUser].schedule=[]; localStorage.setItem("users",JSON.stringify(users)); currentSchedule=[]; displaySchedule([]); }
+
+// Format hour
+function formatHour(h){ const hr=Math.floor(h); const min=Math.round((h%1)*60); return `${hr.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`; }
+
+// Smart schedule
+function generateSchedule(){
+  const wake = parseInt(document.getElementById("wake").value);
+  const sleep = parseInt(document.getElementById("sleep").value);
+  let totalStudyHours = parseInt(document.getElementById("study").value);
+  const subjectsInput = document.getElementById("subjects").value.split(",").map(s=>s.trim());
+  let playHours = parseInt(document.getElementById("play").value);
+  if(!wake||!sleep||!totalStudyHours||subjectsInput.length===0){ alert("Fill all fields"); return; }
+
+  const subjectWeights = {};
+  subjectsInput.forEach(s=>{ subjectWeights[s]=1; });
+  const totalWeight = Object.values(subjectWeights).reduce((a,b)=>a+b,0);
+  const subjectHours = {};
+  subjectsInput.forEach(s=>{ subjectHours[s] = Math.round((subjectWeights[s]/totalWeight)*totalStudyHours*10)/10; });
+
+  let schedule=[], currentHour=wake;
+  const sortedSubjects = subjectsInput;
+
+  sortedSubjects.forEach(sub=>{
+    let hours = subjectHours[sub];
+    while(hours>0 && currentHour<sleep){
+      let session=Math.min(1,hours);
+      schedule.push({time:`${formatHour(currentHour)} - ${formatHour(currentHour+session)}`, task:`Study ${sub}`});
+      currentHour+=session; hours-=session;
+      if(currentHour<sleep && hours>0) { schedule.push({time:`${formatHour(currentHour)} - ${formatHour(currentHour+0.17)}`, task:"Break"}); currentHour+=0.17; }
+    }
+  });
+
+  while(playHours>0 && currentHour<sleep){ 
+    let session=Math.min(1,playHours); 
+    schedule.push({time:`${formatHour(currentHour)} - ${formatHour(currentHour+session)}`, task:"Play"}); 
+    currentHour+=session; playHours-=session; 
+  }
+
+  if(currentHour<sleep) schedule.push({time:`${formatHour(currentHour)} - ${formatHour(sleep)}`, task:"Free / Rest"});
+  currentSchedule=schedule;
+
+  // Save in localStorage
+  let users = JSON.parse(localStorage.getItem("users")||"{}");
+  users[currentUser].schedule = schedule;
+  localStorage.setItem("users",JSON.stringify(users));
+
+  displaySchedule(schedule);
+  startReminderChecker();
+}
+
+// Display list + calendar
+function displaySchedule(items){
+  const container=document.getElementById("schedule"); container.innerHTML="";
+  const now=new Date(); const currentHour=now.getHours()+now.getMinutes()/60;
+  items.forEach((it,i)=>{
+    const div=document.createElement("div"); div.className="item"; div.draggable=true; div.dataset.index=i; div.innerText=`${it.time} → ${it.task}`;
+    const [start,end]=it.time.split(" - ").map(t=>{ const [h,m]=t.split(":").map(Number); return h+m/60; });
+    if(currentHour>=start && currentHour<end) div.classList.add("highlight");
+    if(it.task.startsWith("Study")) div.classList.add(`subject-${it.task.split(" ")[1]}`);
+    else if(it.task==="Break") div.classList.add("subject-Break");
+    else if(it.task==="Play") div.classList.add("subject-Play");
+    else if(it.task.includes("Free")) div.classList.add("subject-Free");
+    div.addEventListener("dragstart",(e)=>{ dragged=e.target; });
+    div.addEventListener("dragover",(e)=>{ e.preventDefault(); });
+    div.addEventListener("drop",(e)=>{ const from=parseInt(dragged.dataset.index); const to=parseInt(e.target.dataset.index); [items[from],items[to]]=[items[to],items[from]]; currentSchedule=items; displaySchedule(items); displayCalendar(items); });
+    container.appendChild(div);
+  });
+  displayCalendar(items);
+}
+
+// Calendar
+function displayCalendar(schedule){
+  const calendar=document.getElementById("calendar");
+  calendar.innerHTML="";
+  schedule.forEach(it=>{
+    const div=document.createElement("div");
+    div.className="block";
+    if(it.task.startsWith("Study")) div.classList.add("block-Study");
+    else if(it.task==="Break") div.classList.add("block-Break");
+    else if(it.task==="Play") div.classList.add("block-Play");
+    else div.classList.add("block-Free");
+    div.innerHTML=`<span>${it.time}</span><span>${it.task}</span>`;
+    calendar.appendChild(div);
+  });
+}
+
+// Live highlight
+function updateCurrentHighlight(){
+  const now = new Date();
+  const currentHour = now.getHours() + now.getMinutes()/60;
+  const blocks = document.querySelectorAll("#calendar .block");
+  blocks.forEach(block=>{
+    block.classList.remove("current");
+    const timeRange = block.querySelector("span").innerText.split(" - ");
+    const start = timeToDecimal(timeRange[0]);
+    const end = timeToDecimal(timeRange[1]);
+    if(currentHour>=start && currentHour<end){ block.classList.add("current"); }
+  });
+}
+function timeToDecimal(t){ const [h,m]=t.split(":").map(Number); return h + m/60; }
+setInterval(updateCurrentHighlight, 60000);
+updateCurrentHighlight();
+
+// Reminder + sound
+let audio = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+function startReminderChecker(){
+  setInterval(()=>{
+    const now=new Date(); const currentHour=now.getHours()+now.getMinutes()/60;
+    currentSchedule.forEach(it=>{
+      const [start,end]=it.time.split(" - ").map(t=>{ const [h,m]=t.split(":").map(Number); return h+m/60; });
+      if(Math.abs(currentHour-start)<0.02){ 
+        if(Notification.permission==="granted") new Notification(`Time to ${it.task}`);
+        if("vibrate" in navigator) navigator.vibrate(800);
+        audio.play();
+      }
+    });
+  },60000);
+}
+if(Notification.permission!=="granted") Notification.requestPermission();
+
+// PDF export
+function exportPDF(){
+  if(!currentSchedule.length){ alert("No schedule to export"); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text("Ultra Smart Study Planner", 14, 20);
+  currentSchedule.forEach((it,i)=>{ doc.text(`${i+1}. ${it.time} → ${it.task}`,14, 30+i*10); });
+  doc.save("StudyPlanner.pdf");
+}
+</script>
+
+</body>
+</html>
